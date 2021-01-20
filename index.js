@@ -1,5 +1,6 @@
 const express = require('express');
 const morgan = require('morgan');
+const cors = require('cors');
 const app = express();
 
 app.use(express.json())
@@ -12,6 +13,7 @@ app.use(morgan('tiny', {
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body', {
     skip: (req, res) => { return req.method !== 'POST' }
 }));
+app.use(cors());
 
 const MAX_ID = 99999;
 const MIN_ID = 10000;
@@ -36,12 +38,12 @@ let persons = [
 
 app.get('/info', (req, res) => {
     const pvm = new Date();
-    res.send(`<p>Phonebook has info for ${persons.length} people</p>
+    return res.send(`<p>Phonebook has info for ${persons.length} people</p>
     <p>${pvm}</p>`);
 })
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons);
+    return res.json(persons);
 })
 
 app.get('/api/persons/:id', (request, response) => {
@@ -49,9 +51,9 @@ app.get('/api/persons/:id', (request, response) => {
     const person = persons.find(person => person.id === id);
 
     if(person) {
-        response.json(person);
+        return response.json(person);
     } else {
-        response.status(404).end();
+        return response.status(404).end();
     }
 })
 
@@ -59,7 +61,7 @@ app.delete('/api/persons/:id', ( request, response) => {
     const id = Number(request.params.id);
     persons = persons.filter(person => person.id !== id);
 
-    response.status(204).end();
+    return response.status(204).end();
 })
 
 const generateId = () => {
@@ -98,15 +100,15 @@ app.post('/api/persons', (request, response) => {
         id: generateId(),
     }
     persons = persons.concat(person);
-    response.json(person);
+    return response.json(person);
 })
 
 const unknownEndpoint = (request, response) => {
-    response.status(404).send({ error: 'unknown endpoint' })
+    return response.status(404).send({ error: 'unknown endpoint' })
 }
 
 app.use(unknownEndpoint)
 
-const port = 3001;
-app.listen(port);
-console.log(`Server running on port ${port}`);
+const PORT = process.env.PORT || 3001;
+app.listen(PORT);
+console.log(`Server running on port ${PORT}`);
