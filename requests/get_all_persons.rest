@@ -1,1 +1,1 @@
-GET http://localhost:3001/api/persons
+GET https://fast-hollows-63612.herokuapp.com/api/persons
