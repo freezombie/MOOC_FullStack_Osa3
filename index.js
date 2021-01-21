@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const app = express();
+const Person = require('./models/person')
 
 app.use(express.json())
 morgan.token('body', (req) => {
@@ -19,24 +21,6 @@ app.use(express.static('build'));
 const MAX_ID = 99999;
 const MIN_ID = 10000;
 
-let persons = [
-    {
-        "name": "Ada Lovelace",
-        "number": "777",
-        "id": 2
-    },
-    {
-        "name": "Dan Abramov",
-        "number": "888",
-        "id": 3
-    },
-    {
-        "name": "Mary Poppendieck",
-        "number": "39-23-6423122",
-        "id": 4
-    }
-]
-
 app.get('/info', (req, res) => {
     const pvm = new Date();
     return res.send(`<p>Phonebook has info for ${persons.length} people</p>
@@ -44,7 +28,9 @@ app.get('/info', (req, res) => {
 })
 
 app.get('/api/persons', (req, res) => {
-    return res.json(persons);
+    Person.find({}).then(people => {
+        res.json(people);
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
@@ -65,12 +51,12 @@ app.delete('/api/persons/:id', ( request, response) => {
     return response.status(204).end();
 })
 
-const generateId = () => {
+const generateId = async() => {
     let returnedId = 0;
     let possiblePerson = null;
     do {
         const randomId = Math.floor(Math.random() * (MAX_ID - MIN_ID + 1) + MIN_ID);
-        possiblePerson = persons.find( ({ id }) => id === randomId );
+        possiblePerson = await Person.findOne({ id: randomId}).exec();
         if (!possiblePerson) {
             returnedId = randomId;
         }
@@ -89,19 +75,27 @@ app.post('/api/persons', (request, response) => {
         return response.status(400).json({
             error: 'number missing'
         })
-    } else if (persons.find( ({name}) => name === body.name)) {
-        return response.status(409).json({
-            error: 'Name already exists'
-        })
     }
 
-    const person = {
-        name: body.name,
-        number: body.number,
-        id: generateId(),
-    }
-    persons = persons.concat(person);
-    return response.json(person);
+    Person.findOne({name: body.name}, (err, person) => {
+        console.log(err);
+        console.log(person);
+        if(person) {
+            return response.status(409).json({
+                error: 'Name already exists'
+            })
+        } else {
+            const person = new Person({
+                name: body.name,
+                number: body.number,
+                id: generateId(),
+            })
+
+            person.save().then(savedPerson => {
+                return response.json(savedPerson);
+            })
+        }
+    })    
 })
 
 const unknownEndpoint = (request, response) => {
@@ -110,6 +104,7 @@ const unknownEndpoint = (request, response) => {
 
 app.use(unknownEndpoint)
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT);
-console.log(`Server running on port ${PORT}`);
+const PORT = process.env.PORT;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
