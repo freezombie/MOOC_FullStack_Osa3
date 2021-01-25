@@ -1,1 +1,1 @@
-DELETE https://fast-hollows-63612.herokuapp.com/api/persons/49450
+DELETE http://localhost:3001/api/persons/600984d8fcdc5b28bafe6a48
